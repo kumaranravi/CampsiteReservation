@@ -2,11 +2,9 @@ package com.upgrade.campsite.dal.persistence;
 
 import com.upgrade.campsite.dal.entities.Reservation;
 import com.upgrade.campsite.model.Response;
+import com.upgrade.campsite.utils.Utility;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.cfg.Configuration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,15 +21,6 @@ public class ReservationImpl {
 
     private static final Logger LOGGER = Logger.getLogger(ReservationImpl.class.getName());
     private static final String BOOKING_ID_NOT_FOUND = "Booking Id not found";
-
-    public static SessionFactory getSessionFactory() {
-        Configuration configuration = new Configuration().configure();
-        StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()
-                .applySettings(configuration.getProperties());
-        SessionFactory sessionFactory = configuration
-                .buildSessionFactory(builder.build());
-        return sessionFactory;
-    }
 
     public String createCampsiteBooking(Reservation reservation) {
         return createBooking(reservation).toString();
@@ -56,7 +45,7 @@ public class ReservationImpl {
     }
 
     private List<Reservation> getReservation(int bookingId) {
-        Session session = getSessionFactory().openSession();
+        Session session = Utility.getSessionFactory().openSession();
         @SuppressWarnings("unchecked")
         List<Reservation> reservations = session.createQuery("FROM Reservation where bookingid=:bookingid")
                 .setParameter("bookingid",bookingId).list();
@@ -77,7 +66,7 @@ public class ReservationImpl {
     }
 
     public Integer createBooking(Reservation reservation) {
-        Session session = getSessionFactory().openSession();
+        Session session = Utility.getSessionFactory().openSession();
         session.beginTransaction();
         session.save(reservation);
         session.getTransaction().commit();
@@ -87,7 +76,7 @@ public class ReservationImpl {
     }
 
     private ResponseEntity<?> deleteBooking(int bookingId) {
-        Session session = getSessionFactory().openSession();
+        Session session = Utility.getSessionFactory().openSession();
         Response response = new Response();
         ResponseEntity responseEntity = null;
         try{
@@ -113,7 +102,7 @@ public class ReservationImpl {
     private ResponseEntity<?> modifyBooking(Reservation reservation) throws ObjectNotFoundException {
         boolean updateStatus = false;
         Response response = new Response();
-        Session session = getSessionFactory().openSession();
+        Session session = Utility.getSessionFactory().openSession();
         ResponseEntity responseEntity = null;
 
         try {

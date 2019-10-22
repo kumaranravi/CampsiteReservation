@@ -4,6 +4,7 @@ import com.upgrade.campsite.dal.entities.Reservation;
 import com.upgrade.campsite.model.BookingConfirmation;
 import com.upgrade.campsite.model.Response;
 import com.upgrade.campsite.services.ReservationService;
+import com.upgrade.campsite.services.SearchService;
 import com.upgrade.campsite.utils.Utility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -13,6 +14,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -25,18 +29,33 @@ public class ReservationController {
     @Autowired
     private ReservationService reservationService;
 
+    @Autowired
+    private SearchService searchService;
+
 
     @RequestMapping(value = "/reservations",
             method = RequestMethod.POST,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> bookReservations(@RequestBody Reservation reservation) {
+    public ResponseEntity<?> bookReservations(@RequestBody Reservation reservation) throws ParseException {
+
+        // Validate the reservation days are lesser or equal to 3, and reservation are less than a month in advance.
+        LocalDate arrivalDate = reservation.getArrivalDate().toLocalDate();
+        Period maximumReservationDays = Period.between(reservation.getArrivalDate().toLocalDate(), reservation.getDepartureDate().toLocalDate());
+        Period advanceBooking = Period.between(arrivalDate, arrivalDate.plusMonths(1));
+        if (maximumReservationDays.getDays() > 3 || ((advanceBooking.getMonths() == 1 || advanceBooking.getMonths() > 1) && advanceBooking.getDays() >0)) {
+            Response response = new Response(200, "Reservation cannot be made for more than 3days");
+            return new ResponseEntity<Response>(response, HttpStatus.OK);
+        }
 
         if (!Utility.validateEmailId(reservation.getEmail())) {
             Response response = new Response(400, "Invalid email Address");
             return new ResponseEntity<Response>(response, HttpStatus.BAD_REQUEST);
         }
 
-        //TODO : Search if dates are valid
+        ResponseEntity responseEntity = searchService.findAvailablity(reservation);
+        if (responseEntity != null) {
+            return responseEntity;
+        }
 
         String bookingId = reservationService.bookReservation(reservation);
         if (bookingId != null) {
@@ -47,10 +66,10 @@ public class ReservationController {
         }
     }
 
-    @RequestMapping(value = "/reservations/update/",
+    @RequestMapping(value = "/reservations/update",
             method = RequestMethod.POST,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> modifyReservations(@RequestBody Reservation reservation) {
+    public ResponseEntity<?> modifyReservations(@RequestBody Reservation reservation) throws ParseException {
 
         if (reservation.getBookingId() == null) {
             Response response = new Response(400, "Booking Id not provided");
@@ -62,7 +81,20 @@ public class ReservationController {
             return new ResponseEntity<Response>(response, HttpStatus.ACCEPTED );
         }
 
-        //TODO : Search if dates are valid before modifying
+        // Validate the reservation days are lesser or equal to 3, and reservation are less than a month in advance.
+        LocalDate arrivalDate = reservation.getArrivalDate().toLocalDate();
+        Period maximumReservationDays = Period.between(reservation.getArrivalDate().toLocalDate(), reservation.getDepartureDate().toLocalDate());
+        Period advanceBooking = Period.between(arrivalDate, arrivalDate.plusMonths(1));
+        if (maximumReservationDays.getDays() > 3 || ((advanceBooking.getMonths() == 1 || advanceBooking.getMonths() > 1) && advanceBooking.getDays() >0)) {
+            Response response = new Response(200, "Reservation cannot be made for more than 3days");
+            return new ResponseEntity<Response>(response, HttpStatus.OK);
+        }
+
+        ResponseEntity responseEntity = searchService.findAvailablity(reservation);
+        if (responseEntity != null) {
+            return responseEntity;
+        }
+
         return reservationService.modifyReservation(reservation);
     }
 
