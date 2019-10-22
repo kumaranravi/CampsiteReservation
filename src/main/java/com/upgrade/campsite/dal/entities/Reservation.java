@@ -38,6 +38,8 @@ public class Reservation {
         this.departureDate = departureDate;
     }
 
+    public Reservation(){}
+
     public Reservation(String username, String email, Date arrivalDate, Date departureDate) {
         this.username = username;
         this.email = email;
