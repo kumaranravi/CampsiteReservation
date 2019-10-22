@@ -66,7 +66,7 @@ public class ReservationController {
         }
     }
 
-    @RequestMapping(value = "/reservations/update/",
+    @RequestMapping(value = "/reservations/update",
             method = RequestMethod.POST,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> modifyReservations(@RequestBody Reservation reservation) throws ParseException {
